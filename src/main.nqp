@@ -1,7 +1,8 @@
 use Perl6::Grammar;
 use Perl6::Actions;
+use Raku::Grammar;
+use Raku::Actions;
 use Perl6::Compiler;
-
 
 # Initialize Rakudo runtime support.
 nqp::p6init();
@@ -10,10 +11,18 @@ nqp::p6init();
 my $comp := Perl6::Compiler.new();
 
 $comp.language('Raku');
-$comp.parsegrammar(Perl6::Grammar);
-$comp.parseactions(Perl6::Actions);
-$comp.addstage('syntaxcheck', :before<ast>);
-$comp.addstage('optimize', :after<ast>);
+if nqp::getenvhash()<RAKUDO_RAKUAST> {
+    $comp.parsegrammar(Raku::Grammar);
+    $comp.parseactions(Raku::Actions);
+    $comp.addstage('syntaxcheck', :before<ast>);
+    $comp.addstage('qast', :after<ast>);
+}
+else {
+    $comp.parsegrammar(Perl6::Grammar);
+    $comp.parseactions(Perl6::Actions);
+    $comp.addstage('syntaxcheck', :before<ast>);
+    $comp.addstage('optimize', :after<ast>);
+}
 hll-config($comp.config);
 nqp::bindhllsym('Raku', '$COMPILER_CONFIG', $comp.config);
 
